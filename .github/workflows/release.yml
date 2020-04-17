@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2016, macos-latest, ubuntu-latest]
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@v2
+
+      - name: Install node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 10.13.0
+
+      - name: Install Dependencies
+        run: yarn
+
+      - name: Build windows production binaries
+        if: runner.os == 'Windows'
+        run: node_modules\.bin\electron-builder --publish=always
+
+      - name: Build mac production binaries
+        if: runner.os == 'macOS'
+        run: |
+          $(yarn bin)/electron-builder --config.mac.bundleVersion=${{ github.ref }} --publish=always
+
+      - name: Build linux production binaries
+        if: runner.os == 'Linux'
+        run: $(yarn bin)/electron-builder --publish=always
